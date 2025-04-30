@@ -1,0 +1,119 @@
+QLineEdit {{
+    font: 26px;
+}}
+QLabel {{
+    font-size: 20px;
+}}
+QPushButton {{
+    font-size: 24px;
+    background-color: {QTMATERIAL_SECONDARYDARKCOLOR};
+    color: {QTMATERIAL_PRIMARYCOLOR};
+    border-color: {QTMATERIAL_SECONDARYCOLOR};
+}}
+QTextEdit {{
+    font-size: 22px;
+}}
+QListWidget {{
+    font-size: 22px;
+}}
+QComboBox {{
+    font-size:20px;
+}}
+
+QCheckBox{{
+    font-size:20px;
+}}
+
+QCheckBox::indicator:unchecked {{
+    image: url(unchecked.png);
+}}
+
+QCheckBox::indicator:checked {{
+    image: url(check-box.png);
+}}
+
+QDoubleSpinBox{{
+    font-size:17px;
+    color: {QTMATERIAL_PRIMARYLIGHTCOLOR};
+}}
+
+QDoubleSpinBox::up-arrow {{
+    image: url(up-arrow.svg);
+}}
+
+QDoubleSpinBox::down-arrow {{
+    image: url(down-arrow.png);
+}}
+
+QSlider::handle:horizontal{{
+    image: url(volume.png);
+    width: 50px;
+}}
+
+QSlider::handle:vertical{{
+    image: url(volume.png);
+    height: 50px;
+}}
+
+QSlider::add-page:vertical{{
+    background: {QTMATERIAL_PRIMARYCOLOR};
+}}
+
+QSlider::sub-page:vertical{{
+    background: {QTMATERIAL_SECONDARYCOLOR}
+}}
+
+QVBoxLayout{{
+    background-color: {QTMATERIAL_SECONDARYCOLOR};
+}}
+
+QRect{{
+    background-color: {QTMATERIAL_SECONDARYCOLOR};
+}}
+
+.heading {{
+    font-size: 26px;
+    color: {QTMATERIAL_PRIMARYLIGHTCOLOR};
+    background-color: {QTMATERIAL_SECONDARYCOLOR};
+}}
+
+.littleHeading {{
+    font-size: 23px;
+    color: {QTMATERIAL_PRIMARYLIGHTCOLOR};
+    background-color: {QTMATERIAL_SECONDARYDARKCOLOR};
+}}
+.showText {{
+    background-color: {QTMATERIAL_SECONDARYDARKCOLOR};
+}}
+.editHeading {{
+    font-size: 23px;
+    background-color: {QTMATERIAL_SECONDARYDARKCOLOR};
+}}
+
+.warning {{
+    color: #ff0000;
+}}
+
+.searchHeading {{
+    font-size: 20px;
+    color: {QTMATERIAL_PRIMARYLIGHTCOLOR};
+}}
+
+.listButton {{
+    font-size: 18px;
+    background-color: {QTMATERIAL_SECONDARYCOLOR};
+    color: {QTMATERIAL_PRIMARYLIGHTCOLOR};
+    border-color: {QTMATERIAL_SECONDARYCOLOR};
+}}
+
+.clickedButton {{
+    font-size: 18px;
+    background-color: {QTMATERIAL_PRIMARYCOLOR};
+    color: {QTMATERIAL_PRIMARYTEXTCOLOR};
+    border-color: {QTMATERIAL_SECONDARYCOLOR};
+}}
+
+.audioButton {{
+    background-color: {QTMATERIAL_PRIMARYCOLOR};
+    border-color: {QTMATERIAL_SECONDARYCOLOR};
+}}
