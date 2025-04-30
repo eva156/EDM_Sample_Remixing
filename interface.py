@@ -1082,14 +1082,19 @@ class MainWindow(QMainWindow):
         self.splash_screen = LoadWindow(self)
         self.splash_screen.show()
 
+        # create thread to synthesise file
+        worker = Worker(self.generate_file)
+        worker.signals.error.connect(lambda e: self.show_error_msg(QMessageBox.Icon.Critical, "Background Task Failed", str(e)))
+        self.threadpool.start(worker)
+    
+    def generate_file(self, progress_callback=None):
         #create generator
         program_generator = DSLProgramGenerator(
             self.checked_samples, 
             self.checked_sonic_pi_samples, 
             os.path.join(self.current_project_path, "samples")
             )
-        
-        # generate sonic pi file (writes generated_track_*.rb)
+        # run algorithm to synthesise file
         try:
             program_generator.synthesise_file(self.current_project_path)
         except Exception as e:
