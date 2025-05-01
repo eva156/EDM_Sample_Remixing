@@ -2,6 +2,7 @@ import pytest
 import numpy as np
 import audio_processing.envelope_processor as envelope_processor
 
+
 class DummySegment:
     fade_calls = []
 

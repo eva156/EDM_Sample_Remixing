@@ -2,7 +2,6 @@ import pytest
 from PyQt5 import QtWidgets
 from interface.interface import MainWindow
 
-
 class DummySample:
     # dummy to track checked state
     def __init__(self, name):

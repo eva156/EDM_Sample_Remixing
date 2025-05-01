@@ -3,6 +3,7 @@ import sexpdata
 import synthesis.rosette_translator as rt
 import synthesis.sonic_pi_dsl as dsl
 
+
 # Helpers
 S = sexpdata.Symbol
 

@@ -2,6 +2,7 @@ import pytest
 import numpy as np
 from audio_processing.correlator import Correlator
 
+
 @ pytest.fixture(autouse=True)
 def patch_lowpass(monkeypatch):
     """

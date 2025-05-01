@@ -2,6 +2,7 @@ import pytest
 import numpy as np
 from synthesis.variable_markov_model import VMM
 
+
 class SimpleVMM(VMM):
     """Subclass to override get_probability_distribution for deterministic tests."""
     def get_probability_distribution(self, counts, context):

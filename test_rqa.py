@@ -2,6 +2,7 @@ import pytest
 import numpy as np
 import synthesis.rqa_detector as rqa_detector
 
+
 # Dummy classes to stub heavy dependencies
 class DummyResult:
     # 16 features in order used by RQA_Detector

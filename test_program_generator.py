@@ -2,6 +2,7 @@ import os
 import numpy as np
 import pytest
 
+
 from synthesis.program_generator import (
     ProgramGenerator,
     LoopProgramGenerator,
