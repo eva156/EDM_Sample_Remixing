@@ -45,7 +45,15 @@ EDM_Sample_Remixing/
 │    ├── sonic_pi_dsl.py       # Sonic Pi code DSL
 │    ├── rosette_integrator.py # Rosette solver glue
 │    ├── rosette_translator.py # AST → Sonic Pi code
-├── tests_interface.py         # pytest suites (GUI tests)
+├── tests_interface.py         # pytest suites (interface tests)
+├── tests_correlator.py        # pytest suites (audio processing tests)
+├── tests_envelope_processor.py# pytest suites (audio processing tests)
+├── tests_repeat_processor.py  # pytest suites (audio processing tests)
+├── tests_program_generator.py # pytest suites (synthesis tests)
+├── tests_dsl.py               # pytest suites (synthesis tests)
+├── tests_rqa.py               # pytest suites (synthesis tests)
+├── tests_vmm.py               # pytest suites (synthesis tests)
+├── tests_rosette_translator.py# pytest suites (synthesis tests)
 ├── loop_extractor.py          # loop extractor wrapper with optimisations over loopextractor
 ├── main.py                    # App bootstrap & Qt event loop
 └── README.md                  # (this file)
