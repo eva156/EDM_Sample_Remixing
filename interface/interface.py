@@ -28,13 +28,13 @@ import os
 from interface.worker_thread import Worker
 import shutil
 import pyqtgraph as pg
-from audiofile_manager import Sample_File, Original_Track_File, Sonic_Sample_File
+from audio_processing.audiofile_manager import Sample_File, Original_Track_File, Sonic_Sample_File
 from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent
 import numpy as np
 from program_generator import LoopProgramGenerator, DSLProgramGenerator
-from draggable_item import DraggableItem
+from interface.draggable_item import DraggableItem
 from loop_extractor import LoopExtractor
-from audio_graph import Audio_Graph
+from interface.audio_graph import Audio_Graph
 from audio_database import ProjectDatabase
 from pymongo import MongoClient
 from audio_recogniser import Audio_Recogniser
