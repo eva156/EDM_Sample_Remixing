@@ -1,7 +1,7 @@
 import pytest
 from PyQt5 import QtWidgets
 from interface.interface import MainWindow
-import interface.interface as interface
+
 
 class DummySample:
     # dummy to track checked state
