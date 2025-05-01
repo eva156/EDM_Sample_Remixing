@@ -31,13 +31,13 @@ import pyqtgraph as pg
 from audio_processing.audiofile_manager import Sample_File, Original_Track_File, Sonic_Sample_File
 from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent
 import numpy as np
-from program_generator import LoopProgramGenerator, DSLProgramGenerator
+from synthesis.program_generator import LoopProgramGenerator, DSLProgramGenerator
 from interface.draggable_item import DraggableItem
 from loop_extractor import LoopExtractor
 from interface.audio_graph import Audio_Graph
-from audio_database import ProjectDatabase
+from storage.audio_database import ProjectDatabase
 from pymongo import MongoClient
-from audio_recogniser import Audio_Recogniser
+from storage.audio_recogniser import Audio_Recogniser
 from interface.load_window import LoadWindow
 
 

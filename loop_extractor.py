@@ -8,7 +8,7 @@ import madmom
 from pydub import AudioSegment
 import gridfs
 from io import BytesIO
-from audio_recogniser import Audio_Recogniser
+from storage.audio_recogniser import Audio_Recogniser
 
 """
 Implements LoopExtactor
