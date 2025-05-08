@@ -275,19 +275,3 @@ def translate_rosette(rosette_func):
     #print(parsed)
     dsl_func = translate(parsed)
     return dsl_func
-
-#print(translate_rosette("(define (beatmapper-fun x) (even? x))").to_code())
-#print(translate_rosette("(define (beatmapper-fun x) (if (= (add1 0) x) #f (if (= 7 x) (if #f #t #f) x)))").to_code())
-#print(int("0000002d", base=16))
-
-func = """(define (betmapper-sketch x)
-(assume (bvsge x (int32 0)))
-(assume (bvsle x (int32 30)))
-  (if (bvdiv4? x)
-      #t
-      (if (bvzero? x) #t #f)
-      )
-  )"""
-#parsed = sexpdata.loads(func)
-#dsl_fun = translate(parsed)
-#print(dsl_fun.to_code())
