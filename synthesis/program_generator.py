@@ -62,7 +62,7 @@ class ProgramGenerator:
         Returns:
             float: (end_level - start_level) / max_level
         """
-        print(max_val)
+        #print(max_val)
         return np.round((val2-val1)/max_val,3)
 
     def get_env(self, s):
@@ -80,9 +80,9 @@ class ProgramGenerator:
         decay = self.calc_env_duration(env.attack.time, env.decay.time)
         sustain = self.calc_env_duration(env.decay.time, env.sustain.time)
         release = self.calc_env_duration(env.sustain.time, env.release.time)
-        attack_level = self.calc_env_level(env.start.level, env.attack.level, s.max_vol)
-        decay_level = self.calc_env_level(env.start.level, env.decay.level, s.max_vol)
-        sustain_level = self.calc_env_level(env.start.level, env.sustain.level, s.max_vol)
+        attack_level = self.calc_env_level(env.start.level, env.attack.level, s.original_vol)
+        decay_level = self.calc_env_level(env.start.level, env.decay.level, s.original_vol)
+        sustain_level = self.calc_env_level(env.start.level, env.sustain.level, s.original_vol)
         return start, attack, decay, sustain, release, attack_level, decay_level, sustain_level
 
 class LoopProgramGenerator(ProgramGenerator):
@@ -307,7 +307,10 @@ class PloynomialProgramGenerator(ProgramGenerator):
     """
     generator that fits a polynomial to sleep time intervals and uses
     that to define custome 'sleep' function. It then build rings and 
-    live loops based on the polynomial model
+    live loops based on the polynomial model.
+    Doesn't work because the sample patterns don't fit well to polynomials, 
+    and the complicated math required takes too long in Sonic Pi for it 
+    to keep up with offset times, so thread is usually killed.
     """
     def create_sleep_func(self, offsets, samp_no):
         """
@@ -423,6 +426,12 @@ class DSLProgramGenerator(ProgramGenerator):
             dest (str) : directory where 'generated_track_{n}.rb' saved
         """
         self.contents = []
+        try:
+            available_sample_names = os.listdir(self.samples_folder)
+        except Exception as e:
+            print(e)
+            available_sample_names = []
+        print(available_sample_names)
         self.contents.append(dsl.SampleFolder("samps", self.samples_folder))
         samp = list(self.samples)[0]
         downbeats = samp.full_track.downbeats
@@ -431,30 +440,38 @@ class DSLProgramGenerator(ProgramGenerator):
 
         # range of downbeat indices and average downbeat interval
         downbeat_count = len(downbeats)
-        self.contents.append(dsl.Range("downbeat_count", dsl.Int(0), dsl.Int(downbeat_count), dsl.Int(1)))
+        self.contents.append(dsl.Range("downbeat_count_extracted", dsl.Int(0), dsl.Int(downbeat_count), dsl.Int(1)))
+        self.contents.append(dsl.Range("downbeat_count_sonic", dsl.Int(0), dsl.Int(downbeat_count), dsl.Int(1)))
+        
         sleep_times = [downbeats[j] - downbeats[j-1] for j in range (1,len(downbeats))]
         downbeat = np.round(np.mean(sleep_times), 2)
         self.contents.append(dsl.Var("downbeat_time", dsl.Float(downbeat)))
         
         # initialise two live loop contents
-        live_loop_content = [dsl.Tick("idx", "downbeat_count")]
-        sonic_live_loop_content = [dsl.Tick("idx", "downbeat_count")]
+        live_loop_content = [dsl.Tick("idx", "downbeat_count_extracted")]
+        sonic_live_loop_content = [dsl.Tick("idx", "downbeat_count_sonic")]
         
         # samples extracted from original track: pattern detection, Rosette synthesis
         for i,s in enumerate(self.samples):
-            if s.checked:
+            print(s.name)
+            if s.checked == 2:
                 detected_patterns = self.rqa_det.sample_pattern_detection(s, downbeats)
                 name = s.name.split(".")[0]
                 samp_id = f"_{name}"
                 #num = name.split("_")[-1]
                 sleep_func = self.sleep_function_generation(detected_patterns, samp_id)
                 self.contents.append(sleep_func)
+                try:
+                    s_idx = available_sample_names.index(s.name)
+                except ValueError as e:
+                    print(e)
+                    s_idx = i
                 # add DSL Sample that calls new sleep func
-                live_loop_content.append(dsl.Sample(f"samps, {i}", dsl.Env(self.get_env(s)), dsl.FunctionCall(f"sleep{samp_id}", dsl.Int("idx"))))
+                live_loop_content.append(dsl.Sample(f"samps, {s_idx}", dsl.Env(self.get_env(s)), dsl.FunctionCall(f"sleep{samp_id}", dsl.Int("idx"))))
 
         # built-in Sonic Pi samples: pattern detection, Rosette synthesis
         for i,s in enumerate(self.sonic_samples):
-            if s.checked:
+            if s.checked == 2:
                 detected_patterns = self.rqa_det.sonic_sample_pattern_detection(s, downbeats)
                 name = s.name.split(".")[0]
                 samp_id = f"_{name}"
@@ -462,7 +479,8 @@ class DSLProgramGenerator(ProgramGenerator):
                 num = name.split("_")[-1]
                 sleep_func = self.sleep_function_generation(detected_patterns, samp_id)
                 self.contents.append(sleep_func)
-                sonic_live_loop_content.append(dsl.Sample(name, dsl.Env(self.get_env(s)), dsl.FunctionCall(f"sleep{samp_id}", dsl.Int("idx"))))
+                env = self.get_env(s)
+                sonic_live_loop_content.append(dsl.Sample(name, dsl.Env(env), dsl.FunctionCall(f"sleep{samp_id}", dsl.Int("idx"))))
         
         # close each loop with sleep of averaged downbeat time
         live_loop_content.append(dsl.Sleep(dsl.Get("downbeat_time")))
@@ -590,7 +608,7 @@ class DSLProgramGenerator(ProgramGenerator):
 
     def pattern_even(self, p, match):
         groups, covered_updated = self.modulus_groups(p, 2, self.covered, match)
-        print(groups, covered_updated)
+        #print(groups, covered_updated)
         if covered_updated != False:
             self.covered = covered_updated
             for rem, val in groups.items():
@@ -608,17 +626,20 @@ class DSLProgramGenerator(ProgramGenerator):
         for i, l in zip(start_idxs, consecutive_len):
             if l > 3:
                 if i == 0:
+                    self.conds.append(f"(bvsle x (int32 {i+l}))")
                     self.assertions.append(f"(bvsle x (int32 {i+l}))")
-                elif i + l == len(p)-1:
+                elif i + l == len(p):
+                    self.conds.append(f"(bvsge x (int32 {i}))")
                     self.assertions.append(f"(bvsge x (int32 {i}))")
                 else:
+                    self.conds.append(f"(and (bvsge x (int32 {i})) (bvsle x (int32 {i+l})))")
                     self.assertions.append(f"(and (bvsge x (int32 {i})) (bvsle x (int32 {i+l})))")
                 for x in range(l):
                     self.covered[i + x] = True
     
     def pattern_mod(self, p, match):
         # check for modulus groups ranging up to half the size of the sequence
-        for i in range(3, min(32, int(len(p) * 0.5))):
+        for i in range(3, min(32, len(p))):
             groups, covered_updated = self.modulus_groups(p, i, self.covered, match)
             if covered_updated != False:
                 self.covered = covered_updated
@@ -703,13 +724,10 @@ class DSLProgramGenerator(ProgramGenerator):
         self.conds = []
         # check for if all even or all odd
         self.pattern_even(p, match)
-        print(self.assertions)
         # check for large chunks of match value in a row
         self.pattern_chunks(p, match)
-        print(self.assertions)
         # check for modulus groups ranging up to half the size of the sequence
         self.pattern_mod(p, match)
-        print(self.assertions)
         # check for any match values still left uncovered
         self.pattern_outliers(p, match)
         print(self.assertions)
@@ -770,7 +788,7 @@ class DSLProgramGenerator(ProgramGenerator):
                 conditional = self.generate_conditional(p)
                 programs[tuple(p)] = conditional
             if i > 0:
-                conditional = dsl.Program([dsl.NumVar("x", dsl.Sub(dsl.Int("x"), dsl.Int(splits[i]))), conditional])
+                conditional = dsl.Program([dsl.NumVar("x", dsl.Sub(dsl.Int("x"), dsl.Int(splits[i-1]))), conditional])
             bodies.append(conditional)
         # if multiple patterns, wrap using If otherwise single body function
         if len(patterns) > 1:

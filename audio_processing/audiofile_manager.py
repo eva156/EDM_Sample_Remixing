@@ -33,11 +33,14 @@ class Audio_File():
     """
     def __init__(self, file, db=None, db_name=None):
         # if database and name given, stream into a temp file
+        self.database_name = db_name
+        read = False
         if db and db_name:
             temp = tempfile.NamedTemporaryFile(suffix=os.path.splitext(file)[1], delete=False)
-            db.read_one_audio_file_name(db_name, temp, temp=True)
-            self.file_path = temp.name
-        else:
+            read = db.read_one_audio_file_name(db_name, temp, temp=True)
+            if read:
+                self.file_path = temp.name
+        if not read:
             self.file_path = os.path.abspath(file)
 
         # ensure wav
@@ -223,6 +226,7 @@ class Sample_File(Audio_File):
         self.time = np.linspace(0, n_frames/self.frame_rate, num=n_frames, endpoint=False)
         self.max_time = self.time[-1]
         self.max_vol = np.max(np.abs(self.signal))
+        self.original_vol = self.max_vol
         
     def get_full_vol_path(self, path):
         return os.path.join(path,"samples_full_vol",self.name)
@@ -381,7 +385,7 @@ class Sonic_Sample_File(Sample_File):
     """
     def __init__(self, file, name, full_track, database, rank):
         super().__init__(file, name, full_track, database, rank=rank, database_name=name.upper(), env_set=True)
-        self.max_vol = 10000
+        self.original_vol = 10000
     
     def _initialise_metadata(self):
         # sonic pi files has particular downbeats probs format in DB

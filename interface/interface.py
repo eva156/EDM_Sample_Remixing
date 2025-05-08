@@ -517,6 +517,9 @@ class MainWindow(QMainWindow):
             self.corr_line.getData(self.current_sample.corr[1], self.original_track.frame_rate)
     
     def project_clicked(self, item):
+        # reset checked samples
+        self.checked_samples = []
+        self.checked_sonic_pi_samples = []
         # triggered when user selects track
         self.current_project = item.text()
         self.current_project_path = f"uploaded_projects/{item.text()}"
@@ -750,14 +753,14 @@ class MainWindow(QMainWindow):
         if sample in self.samples.keys():
             samp = self.samples[sample]
             samp.checked = checked
-            if checked:
+            if checked and samp not in self.checked_samples:
                 self.checked_samples.append(samp)
             elif samp in self.checked_samples:
                 self.checked_samples.remove(samp)
         else:
             samp = self.sonic_samples[sample]
             samp.checked = checked
-            if checked:
+            if checked and samp not in self.checked_sonic_pi_samples:
                 self.checked_sonic_pi_samples.append(samp)
             elif samp in self.checked_sonic_pi_samples:
                 self.checked_sonic_pi_samples.remove(samp)
@@ -1076,7 +1079,7 @@ class MainWindow(QMainWindow):
         """
         #print(self.original_track.downbeats)
         #disable generate button to prevent re-entry
-        self.generate_button.setEnabled(False)
+        #self.generate_button.setEnabled(False)
 
         #show loadng screen
         self.splash_screen = LoadWindow(self)
@@ -1101,7 +1104,7 @@ class MainWindow(QMainWindow):
             self.show_error_msg(QMessageBox.Icon.Critical, "Synthesis Error", f"Could not generate program:\n{e}")
         finally:
             self.splash_screen.close()
-            self.generate_button.setEnabled(True)
+            #self.generate_button.setEnabled(True)
     
     def create_temp_ui(self):
         # temporary UI while it was being developed

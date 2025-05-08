@@ -29,6 +29,11 @@ def translate_define(ast):
     body = translate(ast[4])
     #print("body", body)
     if not isinstance(body, dsl.If):
+        if isinstance(body, dsl.Int):
+            if body.x == 1:
+                body = dsl.Bool("true")
+            elif body.x == 0:
+                body = dsl.Bool("false")
         body = dsl.Return(body)
     return body
 
@@ -47,10 +52,20 @@ def translate_if(ast):
     then = translate(ast[2])
     #print("then", then)
     if not isinstance(then, dsl.If):
+        if isinstance(then, dsl.Int):
+            if then.x == 1:
+                then = dsl.Bool("true")
+            elif then.x == 0:
+                then = dsl.Bool("false")
         then = dsl.Return(then)
     else_branch = translate(ast[3])
     #print("else", else_branch)
     if not isinstance(else_branch, dsl.If):
+        if isinstance(else_branch, dsl.Int):
+            if else_branch.x == 1:
+                else_branch = dsl.Bool("true")
+            elif else_branch.x == 0:
+                else_branch = dsl.Bool("false")
         else_branch = dsl.Return(else_branch)
     return dsl.If([condition], [then, else_branch])
 

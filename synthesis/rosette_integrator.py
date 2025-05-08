@@ -106,7 +106,7 @@ rosette_int16_template = r'''#lang rosette
 ;; grammar for final branch structure
 (define-grammar (beat-if x)
   [term
-   (choose #t #f (int32 0) (int32 1) (beat-cmp x)
+   (choose #t #f (beat-cmp x)
            (if (beat-cmp x) (term) (term)))]
   )
 

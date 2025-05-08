@@ -30,10 +30,16 @@ class RQA_Detector:
         """
         sample_offsets = sample.offsets
         binary_encoding = [int(downbeats[i] in sample_offsets) for i in range(len(downbeats))]
+        # if only one instance of sample return now as this will likely return as all 0s with pattern detection
+        # or if already all zeros
+        if sum(binary_encoding) <= 1:
+            print(binary_encoding)
+            return [binary_encoding]
         data, recurrence_features, window_pos = self.recurrence_quantification_analysis(binary_encoding, sample.name)
         cluster_patterns, segments, window_labels, window_pos, change_points, beat_classes = self.point_change_analysis(sample.name.split(".")[0], data, recurrence_features, window_pos)
         vmm = VMM(max_order=8)
-        detected_patterns = vmm.vmm(binary_encoding, cluster_patterns, segments, window_labels, window_pos, change_points, beat_classes, occurrence_weight=1)
+        detected_patterns = vmm.vmm(binary_encoding, cluster_patterns, segments, window_labels, window_pos, change_points, beat_classes, occurrence_weight=0)
+        print(detected_patterns)
         return detected_patterns
     
     def sonic_sample_pattern_detection(self, sample, beats):
@@ -49,10 +55,13 @@ class RQA_Detector:
         closest_idx = difference.argmin(axis=0)
         offsets_onbeat = np.array(beats)[closest_idx]
         binary_encoding = [int(beats[i] in offsets_onbeat) for i in range(len(beats))]
+        if sum(binary_encoding) == 1:
+            print(binary_encoding)
+            return [binary_encoding]
         data, recurrence_features, window_pos = self.recurrence_quantification_analysis(binary_encoding, sample.name)
         cluster_patterns, segments, window_labels, window_pos, change_points, beat_classes = self.point_change_analysis(sample.name.split(".")[0], data, recurrence_features, window_pos)
         vmm = VMM(max_order=8)
-        detected_patterns = vmm.vmm(binary_encoding, cluster_patterns, segments, window_labels, window_pos, change_points, beat_classes, occurrence_weight=2*(len(binary_encoding)))
+        detected_patterns = vmm.vmm(binary_encoding, cluster_patterns, segments, window_labels, window_pos, change_points, beat_classes, occurrence_weight=50)
         return detected_patterns
 
 

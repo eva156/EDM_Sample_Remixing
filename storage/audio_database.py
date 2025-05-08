@@ -26,6 +26,7 @@ class Database:
         #database
         self.db = self.cluster[name]
         self.bucket = gridfs.GridFS(self.db)
+        print(self.bucket.list())
     
     def add_one_audio_file(self, url, name):
         """
@@ -54,8 +55,10 @@ class Database:
             else:
                 with open(dest, 'wb') as output_file:
                     output_file.write(self.bucket.get(results['_id']).read())
+            return True
         else:
             print("file not found", name)
+            return False
 
     def read_one_audio_file_id(self, id, dest, temp=False):
         """
@@ -314,10 +317,11 @@ class ProjectDatabase(Database):
         Args:
             sample: instance of SampleFile class (from audiofile_manager)
         """
-        result = self.bucket._files.find_one({'filename': sample.name})
+        result = self.bucket._files.find_one({'filename': sample.database_name})
         if result:
+            rank = result['metadata']['rank']
             self.bucket.delete(result['_id'])
-        new = self.add_one_sample_file_with_env_list(sample.name, sample.file_path, sample.get_envelope(), sample.min_corr, list(sample.downbeat_probs), 0)
+            new = self.add_one_sample_file_with_env_list(sample.database_name, sample.file_path, sample.get_envelope(), sample.min_corr, list(sample.downbeat_probs), rank)
     
     def get_separated_loop_tracks(self, dest):
         """
