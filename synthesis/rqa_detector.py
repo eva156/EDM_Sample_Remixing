@@ -81,7 +81,9 @@ class RQA_Detector:
         window_pos = []
 
         for i in range(0, len(data) - window_size + 1, step_size):
-            window = data[i: min(i+window_size, len(data))]
+            if i + window_size > len(data):
+                break
+            window = data[i: i+window_size]
             embedding_dim = 2
             time_delay = 1
             time_series = TimeSeries(window, embedding_dimension=embedding_dim, time_delay=time_delay)

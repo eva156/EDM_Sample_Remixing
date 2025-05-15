@@ -43,12 +43,11 @@ class VMM:
             training.append(original)
             # if only one instance of sample return now as likely want this singular occurrence
             # or if already all zeros
-            print(original)
             if sum(original) <= 1:
                 detected_patterns.append(original)
             else:
-                counts, initial_counts = self.build_vmm_model(training, occurrence_weight)
-                pattern = self.vmm_sequence_viterbi(counts, 8, len(original), initial_counts)
+                counts = self.build_vmm_model(training, occurrence_weight)
+                pattern = self.vmm_sequence_viterbi(counts, 8, len(original))
                 detected_patterns.append(pattern)
         return detected_patterns
 
@@ -61,8 +60,6 @@ class VMM:
             initial_counts: dict initial context -> weight
         """
         counts = defaultdict(lambda: np.zeros(2))
-        initial_counts = defaultdict(lambda: 0)
-        start_token = -1
 
         for j, seq in enumerate(sequences):
             # larger significance given to original sequence in indexes
@@ -70,11 +67,7 @@ class VMM:
             weight = 16 if j == len(sequences) - 1 else 1
             padded_seq = seq
             n = len(padded_seq)
-
-            # record initial context
-            initial_context = tuple(padded_seq[:2])
-            initial_counts[initial_context] += weight
-            for i in range(max_order, n):
+            for i in range(n):
                 for order in range(1, min(max_order, i) + 1):
                     context = tuple(padded_seq[i-order:i])
                     next_state = padded_seq[i]
@@ -82,10 +75,7 @@ class VMM:
                     if next_state == 1:
                         counts[context][next_state] += occurence_weight
                     counts[context][next_state] += weight
-        #normaise initial counts into probabilities
-        total = sum(initial_counts.values())
-        initial_counts = {ctx: count/total for ctx, count in initial_counts.items()}
-        return counts, initial_counts
+        return counts
 
     def get_probability_distribution(self, counts, context, epsilon=1e-5):
         """
@@ -96,7 +86,7 @@ class VMM:
         for order in range(len(context), 0, -1):
             sub_context = context[-order:]
             if sub_context in counts:
-                count0, count1 = counts[context]
+                count0, count1 = counts[sub_context]
                 #total = np.sum(counts[sub_context])
                 total = count0 + count1
                 if total > 0:
@@ -107,7 +97,7 @@ class VMM:
             
         return np.array([0.5, 0.5])
 
-    def vmm_sequence_viterbi(self, counts, max_order, target_length, initial_context_counts):
+    def vmm_sequence_viterbi(self, counts, max_order, target_length):
         """
         standard Viterbi decoding over binary states given
         transition ditributions in 'counts' and start context 
@@ -115,28 +105,27 @@ class VMM:
         """
         L = max_order
         # backpointer: at time t, map context -> (prob, previous context, bit)
-        backpointers = {max_order: {
-            context: (np.log(max(p, 1e-5)), None, None)
-            for context, p in initial_context_counts.items()
-        }}
-        for t in range(max_order, target_length + max_order):
+        #empty context at t=0
+        backpointers = {0: {(): (np.log(1e-5), None, None)}}
+        for t in range(0, target_length):
             backpointers[t+1] = {}
             for context, (prob, bp, b) in backpointers[t].items():
                 for s in [0,1]:
-                    new_context = context[1:] + (s,)
+                    new_context = (context + (s,))[-L:]
                     transition_prob = self.get_probability_distribution(counts, new_context)
                     new_prob = prob + np.log(transition_prob[s])
-                    if new_context not in backpointers[t+1] or new_prob > backpointers[t+1][new_context][0]:
+                    found = backpointers[t+1].get(new_context)
+                    if found is None or new_prob > found[0]:
                         backpointers[t+1][new_context] = (new_prob, context, s)
         # find best final context
-        final = target_length + L
+        final = target_length
         best_context, _ = max(backpointers[final].items(), key=lambda x: x[1][0])
 
         # backtrack to recover bits
         sequence = []
         current_context = best_context
         current_time = final
-        while current_time > L:
+        while current_time > 0:
             prob, prev_context, bit = backpointers[current_time][current_context]
             sequence.append(bit)
             current_context = prev_context
