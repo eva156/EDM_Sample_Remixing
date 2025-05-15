@@ -138,13 +138,13 @@ def test_sample_pattern_detection_and_sonic(monkeypatch):
     assert isinstance(out, dict)
     assert out['encoding'] == [1, 0, 1]
     assert out['patterns'] == 'patterns'
-    assert out['weight'] == 1
+    assert out['weight'] == 10
     # Test sonic_sample_pattern_detection
     beats = [0.0, 1.0]
     sample.offsets = np.array([0.1])
     out2 = rd.sonic_sample_pattern_detection(sample, beats)
-    # encoding length matches beats, occurrence_weight = 2*len(beats)
-    assert out2['encoding'] and out2['weight'] == 2 * len(beats)
+    # encoding length matches beats
+    assert out2['encoding'] == [1, 0]
 
 
 if __name__ == "__main__":

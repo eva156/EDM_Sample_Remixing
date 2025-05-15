@@ -116,7 +116,7 @@ def test_return_math_ops_tick():
     assert '(9 ** 10)' in dsl.Power(dsl.Expr('9'), dsl.Expr('10')).to_code()
     # Tick
     t = dsl.Tick('i', 'r')
-    assert t.to_code() == 'i = r.tick()'
+    assert t.to_code() == 'i = r.tick().to_i'
 
 
 def test_literals_and_get():

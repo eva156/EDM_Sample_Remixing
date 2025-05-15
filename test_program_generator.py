@@ -23,6 +23,7 @@ class DummySample:
         self.offsets = np.array(offsets)
         self.max_time = max_time
         self.max_vol = max_vol
+        self.original_vol = max_vol
         # create an env with predictable times and levels
         self.env = type('E', (), {
             'start': EnvPoint(0.1, 0.2),

@@ -14,14 +14,12 @@ def test_build_vmm_model_simple():
     seq = [1, 0]
     vmm = VMM(max_order=1)
     counts, initial = vmm.build_vmm_model([seq], occurence_weight=0, max_order=1)
-    # Context before first bit: (-1,) -> next_state=1, weight=10
-    assert counts[(-1,)][1] == 10
     # Context before second bit: context=(1,) -> next_state=0, weight=10
-    assert counts[(1,)][0] == 10
+    assert counts[(1,)][0] == 16
     # Initial_counts for context (first bit,) default 1 + weight 10 = 11
-    assert initial[(1,)] == 11
+    assert initial[(1,0)] == 1
     # No unexpected contexts
-    assert set(counts.keys()) == {(-1,), (1,)}
+    assert set(counts.keys()) == {(1,)}
 
 @pytest.mark.parametrize("counts,context,expected", [
     ({('a',): np.array([2, 2])}, ('a',), np.array([0.5, 0.5])),
@@ -37,9 +35,9 @@ def test_get_probability_distribution_backoff_and_zero():
     # counts empty or zero-sum should return zeros
     counts = {('a',): np.array([0.0, 0.0])}
     pdist = vmm.get_probability_distribution(counts, ('a',))
-    assert np.allclose(pdist, [0.0, 0.0])
+    assert np.allclose(pdist, [0.5, 0.5])
     pdist2 = vmm.get_probability_distribution({}, ('b',))
-    assert np.allclose(pdist2, [0.0, 0.0])
+    assert np.allclose(pdist2, [0.5, 0.5])
 
 def test_vmm_sequence_viterbi_all_ones():
     # With overridden get_probability_distribution always returning [0,1]
@@ -47,15 +45,14 @@ def test_vmm_sequence_viterbi_all_ones():
     initial_counts = {(0,): 5}
     vmm = SimpleVMM(max_order=1)
     seq = vmm.vmm_sequence_viterbi(iv_counts, max_order=1, target_length=5, initial_context_counts=initial_counts)
-    # Expect sequence of length 5: initial_context (0), then four 1s
+    # Expect sequence of length 5: five 1s
     assert isinstance(seq, list)
     assert len(seq) == 5
-    assert seq[0] == 0
-    assert seq[1:] == [1,1,1,1]
+    assert seq == [1,1,1,1,1]
 
 def test_vmm_full_pipeline(monkeypatch):
     # Stub build_vmm_model and vmm_sequence_viterbi
-    patterns = {0: [0,1,0], 1: [1,0]}
+    patterns = {0: [0,1,0,1], 1: [1,1,0,1,0]}
     vmm = VMM()
     calls = []
     def fake_build(seqs, weight, max_order=8):
@@ -67,11 +64,10 @@ def test_vmm_full_pipeline(monkeypatch):
     monkeypatch.setattr(vmm, 'build_vmm_model', fake_build)
     monkeypatch.setattr(vmm, 'vmm_sequence_viterbi', fake_decode)
     # Test with binary_encoding and window data
-    bin_enc = [0,1,0,1,0]
+    bin_enc = [0,1,0,1,1,1,0,1,0]
     window_labels = [0,1]
-    window_pos = [0,2]
-    change_pts = [1]
-    detected = vmm.vmm(bin_enc, patterns, segments=None, window_labels=window_labels, window_pos=window_pos, change_points=change_pts, beat_classes=None)
+    window_pos = [0,4]
+    detected = vmm.vmm(bin_enc, patterns, segments=None, window_labels=window_labels, window_pos=window_pos, change_points=None, beat_classes=None)
     # Should call build and decode for each cluster label
     assert calls[0][0] == 'build'
     assert calls[1][0] == 'decode'

@@ -1,4 +1,4 @@
-from loopextractor.loopextractor.loopextractor.loopextractor import make_spectral_cube, validate_template_sizes, create_loop_spectrum, get_loop_signal
+from jordan_smith_loopextractor.loopextractor import make_spectral_cube, validate_template_sizes, create_loop_spectrum, get_loop_signal
 import os
 import librosa
 import soundfile

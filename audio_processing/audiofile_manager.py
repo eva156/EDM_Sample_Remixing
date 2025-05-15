@@ -86,7 +86,6 @@ class Original_Track_File(Audio_File):
         - keeps project context and an Audio_Recogniser
     """
     def __init__(self, file, project_name, audio_recogniser, database):
-        tempfile.NamedTemporaryFile
         super().__init__(file, db=database, db_name="full_track")
         self.tempo = librosa.feature.tempo(y=self.signal, sr=self.frame_rate, start_bpm=60)[0]
         

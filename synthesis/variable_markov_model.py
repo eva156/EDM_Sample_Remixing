@@ -30,7 +30,7 @@ class VMM:
         """
         
         # ensure start of sequence point is a change point
-        change_points = [0] + change_points
+        #change_points = [0] + change_points
         detected_patterns = []
 
         for lab, pattern in cluster_patterns.items():
@@ -39,10 +39,17 @@ class VMM:
             for i,w in enumerate(window_pos):
                 if window_labels[i] == lab:
                     training.append(binary_encoding[window_pos[i]:window_pos[i]+16])
-            training.append(cluster_patterns[lab])
-            counts, initial_counts = self.build_vmm_model(training, occurrence_weight)
-            pattern = self.vmm_sequence_viterbi(counts, 8, len(cluster_patterns[lab]), initial_counts)
-            detected_patterns.append(pattern)
+            original = cluster_patterns[lab]
+            training.append(original)
+            # if only one instance of sample return now as likely want this singular occurrence
+            # or if already all zeros
+            print(original)
+            if sum(original) <= 1:
+                detected_patterns.append(original)
+            else:
+                counts, initial_counts = self.build_vmm_model(training, occurrence_weight)
+                pattern = self.vmm_sequence_viterbi(counts, 8, len(original), initial_counts)
+                detected_patterns.append(pattern)
         return detected_patterns
 
     def build_vmm_model(self, sequences, occurence_weight, max_order=8):
@@ -54,18 +61,20 @@ class VMM:
             initial_counts: dict initial context -> weight
         """
         counts = defaultdict(lambda: np.zeros(2))
-        initial_counts = defaultdict(lambda: 1)
+        initial_counts = defaultdict(lambda: 0)
         start_token = -1
 
         for j, seq in enumerate(sequences):
             # larger significance given to original sequence in indexes
             # of sequence to be generated
-            weight = 10 if j == len(sequences) - 1 else 1
-
-            # pad beginning of sequence
-            padded_seq = [start_token] * max_order + list(seq)
+            weight = 16 if j == len(sequences) - 1 else 1
+            padded_seq = seq
             n = len(padded_seq)
-            for i in range(1, n):
+
+            # record initial context
+            initial_context = tuple(padded_seq[:2])
+            initial_counts[initial_context] += weight
+            for i in range(max_order, n):
                 for order in range(1, min(max_order, i) + 1):
                     context = tuple(padded_seq[i-order:i])
                     next_state = padded_seq[i]
@@ -73,26 +82,30 @@ class VMM:
                     if next_state == 1:
                         counts[context][next_state] += occurence_weight
                     counts[context][next_state] += weight
-                # track how often each initial bit appears
-                if i == max_order:
-                    initial_context = tuple(padded_seq[max_order:max_order+1])
-                    if 1 in initial_context:
-                        initial_counts[initial_context] += occurence_weight
-                    initial_counts[initial_context] += weight
+        #normaise initial counts into probabilities
+        total = sum(initial_counts.values())
+        initial_counts = {ctx: count/total for ctx, count in initial_counts.items()}
         return counts, initial_counts
 
-    def get_probability_distribution(self, counts, context):
+    def get_probability_distribution(self, counts, context, epsilon=1e-5):
         """
-        back off from full context dwon to shorter suffices until have nonzero counts
+        back off from full context down to shorter suffices until have nonzero counts
         returns normalised [p0, p1] array
+        if no context matches, return uniform 0.5
         """
         for order in range(len(context), 0, -1):
             sub_context = context[-order:]
-            if sub_context in counts and np.sum(counts[sub_context]) > 0:
-                total = np.sum(counts[sub_context])
-                return counts[sub_context] / total
+            if sub_context in counts:
+                count0, count1 = counts[context]
+                #total = np.sum(counts[sub_context])
+                total = count0 + count1
+                if total > 0:
+                    prob_vector = np.array([count0/total, count1/total])
+                    for i, p in enumerate(prob_vector):
+                        prob_vector[i] = max(epsilon, p)
+                    return prob_vector
             
-        return np.array([0,0])
+        return np.array([0.5, 0.5])
 
     def vmm_sequence_viterbi(self, counts, max_order, target_length, initial_context_counts):
         """
@@ -100,44 +113,33 @@ class VMM:
         transition ditributions in 'counts' and start context 
         weights in 'initial_counts'
         """
-        # pick most likely initial context
-        initial_context = list(initial_context_counts.keys())[np.argmax(list(initial_context_counts.values()))]
-        L = len(initial_context)
-        # backpointer: at time t, map context -> (prob, previous (context, bit))
-        backpointers = {}
-        backpointers[L] = {initial_context: (1.0, None)}
-        for t in range(L,target_length):
+        L = max_order
+        # backpointer: at time t, map context -> (prob, previous context, bit)
+        backpointers = {max_order: {
+            context: (np.log(max(p, 1e-5)), None, None)
+            for context, p in initial_context_counts.items()
+        }}
+        for t in range(max_order, target_length + max_order):
             backpointers[t+1] = {}
-            for context, (prob, bp) in backpointers[t].items():
+            for context, (prob, bp, b) in backpointers[t].items():
                 for s in [0,1]:
-                    if len(context) < max_order:
-                        new_context = context + (s,)
-                    else:
-                        new_context = context[1:] + (s,)
-                    prob_vec = self.get_probability_distribution(counts, new_context)
-                    transition_prob = prob_vec[s]
-                    new_prob = prob * transition_prob
+                    new_context = context[1:] + (s,)
+                    transition_prob = self.get_probability_distribution(counts, new_context)
+                    new_prob = prob + np.log(transition_prob[s])
                     if new_context not in backpointers[t+1] or new_prob > backpointers[t+1][new_context][0]:
-                        backpointers[t+1][new_context] = (new_prob, (context, s))
+                        backpointers[t+1][new_context] = (new_prob, context, s)
         # find best final context
-        best_context = None
-        best_prob = 0
-        for context, (prob, bp) in backpointers[target_length].items():
-            if prob >= best_prob:
-                best_prob = prob
-                best_context = context
+        final = target_length + L
+        best_context, _ = max(backpointers[final].items(), key=lambda x: x[1][0])
 
         # backtrack to recover bits
         sequence = []
         current_context = best_context
-        current_time = target_length
+        current_time = final
         while current_time > L:
-            prev_info = backpointers[current_time][current_context][1]
-            if prev_info is None:
-                break
-            prev_context, bit = prev_info
+            prob, prev_context, bit = backpointers[current_time][current_context]
             sequence.append(bit)
             current_context = prev_context
             current_time -= 1
-        sequence = list(initial_context) + list(reversed(sequence))
+        sequence = list(reversed(sequence))
         return sequence

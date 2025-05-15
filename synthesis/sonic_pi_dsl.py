@@ -308,7 +308,8 @@ class Tick(DSL):
         self.var = name
     
     def to_code(self, indent=""):
-        return f"{indent}{self.var} = {self.ring}.tick()"
+        # explicitly convert to integer
+        return f"{indent}{self.var} = {self.ring}.tick().to_i"
 
 # boolean and numeric DSL nodes
 class Int(DSL):

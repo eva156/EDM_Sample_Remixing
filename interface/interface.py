@@ -1010,6 +1010,7 @@ class MainWindow(QMainWindow):
         # run algorithm to generate samples
         self.loop_extractor.run_algorithm(source_path, dest_path, dest_dir, self.current_database, progress_callback)
         self.splash_screen.close()
+        self.generate_button.setEnabled(True)
     
     def new_upload(self):
         """
