@@ -13,11 +13,9 @@ def test_build_vmm_model_simple():
     # simple sequence [1,0], max_order=1, occurrence_weight=0
     seq = [1, 0]
     vmm = VMM(max_order=1)
-    counts, initial = vmm.build_vmm_model([seq], occurence_weight=0, max_order=1)
+    counts = vmm.build_vmm_model([seq], occurence_weight=0, max_order=1)
     # Context before second bit: context=(1,) -> next_state=0, weight=10
     assert counts[(1,)][0] == 16
-    # Initial_counts for context (first bit,) default 1 + weight 10 = 11
-    assert initial[(1,0)] == 1
     # No unexpected contexts
     assert set(counts.keys()) == {(1,)}
 
@@ -42,9 +40,8 @@ def test_get_probability_distribution_backoff_and_zero():
 def test_vmm_sequence_viterbi_all_ones():
     # With overridden get_probability_distribution always returning [0,1]
     iv_counts = {}  # unused for SimpleVMM
-    initial_counts = {(0,): 5}
     vmm = SimpleVMM(max_order=1)
-    seq = vmm.vmm_sequence_viterbi(iv_counts, max_order=1, target_length=5, initial_context_counts=initial_counts)
+    seq = vmm.vmm_sequence_viterbi(iv_counts, max_order=1, target_length=5)
     # Expect sequence of length 5: five 1s
     assert isinstance(seq, list)
     assert len(seq) == 5
@@ -58,8 +55,8 @@ def test_vmm_full_pipeline(monkeypatch):
     def fake_build(seqs, weight, max_order=8):
         calls.append(('build', seqs, weight))
         return 'cnts', 'initial'
-    def fake_decode(cnts, mo, length, initial):
-        calls.append(('decode', cnts, length, initial))
+    def fake_decode(cnts, mo, length):
+        calls.append(('decode', cnts, length))
         return ['decoded']
     monkeypatch.setattr(vmm, 'build_vmm_model', fake_build)
     monkeypatch.setattr(vmm, 'vmm_sequence_viterbi', fake_decode)
